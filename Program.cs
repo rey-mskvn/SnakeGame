@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic; // Добавили для работы со списками List
+using System.Collections.Generic;
 using System.Threading;
-
 class Program
 {
     static void Main()
@@ -10,25 +9,23 @@ class Program
         Console.CursorVisible = false;
         Console.SetWindowSize(80, 25);
         Console.SetBufferSize(80, 25);
-
-        // === ИЗМЕНЕНИЯ ЗДЕСЬ ===
-        // Теперь змейка - это список координат
-        // В C# есть специальный тип для хранения двух чисел - кортеж (int, int)
+        // Создаем генератор случайных чисел
+        Random random = new Random();
+                // Змейка
         List<(int X, int Y)> snake = new List<(int, int)>();
-        
-        // Добавляем голову (первый элемент списка)
-        // Индекс 0 - это голова
         snake.Add((40, 12));
-        
-        // Добавим немного хвоста для начала, чтобы было видно
-        // Хвост будет из двух сегментов за головой
-        snake.Add((39, 12)); // Слева от головы
-        snake.Add((38, 12)); // Еще левее
-        // ======================
-
+        snake.Add((39, 12));
+        snake.Add((38, 12));
+        // === НОВОЕ: ЕДА ===
+        // Объявляем переменные для координат еды
+        int foodX;
+        int foodY;
+                // Функция, которая генерирует еду в случайном месте
+        // Мы её опишем позже, а пока просто вызовем
+        GenerateFood(random, snake, out foodX, out foodY);
+        // ==================
         int directionX = 1;
         int directionY = 0;
-
         while (true)
         {
             // Управление (без изменений)
@@ -43,28 +40,27 @@ class Program
                     case ConsoleKey.RightArrow: directionX = 1; directionY = 0; break;
                 }
             }
-
-            // === ИЗМЕНЕНИЯ В ЛОГИКЕ ===
-            // Получаем текущую голову (первый элемент списка)
+            // Логика движения
             var head = snake[0];
-            
-            // Вычисляем, где будет новая голова
             int newHeadX = head.X + directionX;
             int newHeadY = head.Y + directionY;
-            
-            // Вставляем новую голову в начало списка
-            // Insert(0, ...) - вставить на позицию 0 (в самое начало)
             snake.Insert(0, (newHeadX, newHeadY));
-            
-            // Удаляем последний элемент хвоста
-            // snake.Count - это длина списка
-            // snake.Count - 1 - это индекс последнего элемента
-            snake.RemoveAt(snake.Count - 1);
-            // =========================
-
+                        // === ИЗМЕНЕНИЕ: проверяем, съели ли мы еду ===
+            // Если новая голова встала на то же место, где еда
+            if (newHeadX == foodX && newHeadY == foodY)
+            {
+                // Мы съели еду! НЕ удаляем хвост (змейка растет)
+                // И генерируем новую еду
+                GenerateFood(random, snake, out foodX, out foodY);
+            }
+            else
+            {
+                // Еду не съели - удаляем хвост (змейка движется как обычно)
+                snake.RemoveAt(snake.Count - 1);
+            }
+            // =============================================
             Console.Clear();
-
-            // Рисуем границы (код тот же)
+            // Рисуем границы (без изменений)
             for (int i = 0; i < Console.WindowWidth; i++)
             {
                 Console.SetCursorPosition(i, 0);
@@ -79,18 +75,40 @@ class Program
                 Console.SetCursorPosition(Console.WindowWidth - 1, i);
                 Console.Write('#');
             }
-
-            // === ИЗМЕНЕНИЯ В ОТРИСОВКЕ ===
-            // Рисуем всю змейку в цикле
-            // Переменная segment будет по очереди принимать значения всех элементов списка
+            // Рисуем змейку (без изменений)
             foreach (var segment in snake)
             {
                 Console.SetCursorPosition(segment.X, segment.Y);
-                Console.Write('O'); // Каждый сегмент рисуем как O
+                Console.Write('O');
             }
-            // ===========================
-
+            // === НОВОЕ: Рисуем еду ===
+            Console.SetCursorPosition(foodX, foodY);
+            Console.Write('@'); // Еда - символ @
+            // ========================
             Thread.Sleep(100);
         }
+    }
+    // === НОВЫЙ МЕТОД для генерации еды ===
+    // static - значит метод принадлежит классу, а не объекту
+    // void - ничего не возвращает
+    // out int foodX, out int foodY - мы как бы возвращаем два числа через параметры
+    static void GenerateFood(Random random, List<(int X, int Y)> snake, out int foodX, out int foodY)
+    {
+        bool isOnSnake; // Объявляем переменную здесь
+            do
+        {
+            foodX = random.Next(1, Console.WindowWidth - 1);
+            foodY = random.Next(1, Console.WindowHeight - 1);
+                    isOnSnake = false; // Сбрасываем флаг
+                    foreach (var segment in snake)
+            {
+                if (segment.X == foodX && segment.Y == foodY)
+                {
+                    isOnSnake = true;
+                    break;
+                }
+            }
+        
+        } while (isOnSnake); // А теперь переменная видна!
     }
 }
